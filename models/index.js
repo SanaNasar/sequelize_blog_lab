@@ -1,0 +1,42 @@
+var fs        = require('fs')
+  , path      = require('path')
+  , Sequelize = require('sequelize')
+  , lodash    = require('lodash')
+  , env       = process.env.NODE_ENV || 'development'
+  , config    = require(__dirname + '/../config/config.json')[env]
+  , sequelize = new Sequelize(config.database, config.username, config.password, config)
+  , db        = {}
+
+fs
+  .readdirSync(__dirname)
+  .filter(function(file) {
+    return (file.indexOf('.') !== 0) && (file !== 'index.js')
+  })
+  .forEach(function(file) {
+    var model = sequelize.import(path.join(__dirname, file))
+    db[model.name] = model
+  })
+
+Object.keys(db).forEach(function(modelName) {
+  if ('associate' in db[modelName]) {
+    db[modelName].associate(db)
+  }
+});
+console.log("THIS IS DB");
+console.log(db);
+db.author.create({authorname:'Mickey'}).success(function(author){
+  console.log(author);
+});
+
+db.post.create({posttitle:'SFO is a crazy city'}).success(function(post){
+  console.log(post);
+});
+
+// looking inside the db so it's not plural
+db.post.hasMany(db.author);
+console.log(db);
+
+module.exports = lodash.extend({
+  sequelize: sequelize,
+  Sequelize: Sequelize
+}, db)
